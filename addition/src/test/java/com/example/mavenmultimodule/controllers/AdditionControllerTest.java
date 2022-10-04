@@ -2,26 +2,27 @@ package com.example.mavenmultimodule.controllers;
 
 import com.example.mavenmultimodule.models.SumModel;
 import com.example.mavenmultimodule.services.SumService;
-import com.google.gson.Gson;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest(classes = AdditionController.class)
-@AutoConfigureMockMvc
+@WebMvcTest(controllers = AdditionController.class)
+@ContextConfiguration(classes = AdditionController.class)
 class AdditionControllerTest {
+    ObjectMapper objectMapper = new ObjectMapper();
 
-    @Mock
+    @MockBean
     private SumService sumService;
 
     @Autowired
@@ -29,23 +30,22 @@ class AdditionControllerTest {
 
     @Test
     public void shouldReturn5() throws Exception {
+        Double expectedValue = 5.0;
         SumModel s = new SumModel();
         s.setN1(2.0);
         s.setN2(3.0);
-        Gson gson = new Gson();
-        String json = gson.toJson(s);
 
-        when(sumService.sum(s)).thenReturn(5.0);
+        String json = objectMapper.writeValueAsString(s);
 
-        MvcResult result = this.mockMvc.perform(
+        given(this.sumService.sum(any())).willReturn(expectedValue);
+
+        this.mockMvc.perform(
                 post("/sum")
-                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON_VALUE)
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(json)
                 )
                 .andExpect(status().isOk())
-                .andReturn();
-
-        assertEquals(5, result.getResponse());
+                .andExpect(content().string(expectedValue.toString()));
     }
-
 }
